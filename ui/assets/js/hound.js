@@ -714,14 +714,14 @@ var ResultView = React.createClass({
       );
     }
 
-    if (this.state.results !== null && this.state.results.length === 0) {
+    if (!!this.state.results && this.state.results.length === 0) {
       // TODO(knorton): We need something better here. :-(
       return (
         <div id="no-result">&ldquo;Nothing for you, Dawg.&rdquo;<div>0 results</div></div>
       );
     }
 
-    if (this.state.results === null && this.state.query) {
+    if (!this.state.results && this.state.query) {
       return (
         <div id="no-result"><img src="images/busy.gif" /><div>Searching...</div></div>
       );
