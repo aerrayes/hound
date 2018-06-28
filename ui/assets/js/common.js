@@ -10,7 +10,7 @@ var lib = {
       return template;
     },
 
-    UrlToRepo: function(repo, path, line, rev) {
+    UrlToRepo: function(repo, burls, path, line, rev) {
         var url = repo.url.replace(/\.git$/, ''),
             pattern = repo['url-pattern'],
             filename = path.substring(path.lastIndexOf('/') + 1),
@@ -37,7 +37,7 @@ var lib = {
         }
 
         // I'm sure there is a nicer React/jsx way to do this:
-        return lib.ExpandVars(pattern['base-url'], {
+        return lib.ExpandVars(pattern[burls === 'fosho' ? 'blame-url' : 'base-url'], {
           url : url,
           path: path,
           rev: rev,

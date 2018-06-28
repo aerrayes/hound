@@ -72,7 +72,8 @@ var ParamsFromUrl = function(params) {
     q: '',
     i: 'nope',
     files: '',
-    repos: '*'
+    repos: '*',
+    b: 'nope'
   };
   return ParamsFromQueryString(location.search, params);
 };
@@ -290,8 +291,8 @@ var Model = {
     return url.substring(bx + 1, ax) + ' / ' + name;
   },
 
-  UrlToRepo: function(repo, path, line, rev) {
-    return lib.UrlToRepo(this.repos[repo], path, line, rev);
+  UrlToRepo: function(repo, burls, path, line, rev) {
+    return lib.UrlToRepo(this.repos[repo], burls, path, line, rev);
   },
 
   GetSelection: function () {
@@ -433,20 +434,27 @@ var SearchBar = React.createClass({
       q : this.refs.q.getDOMNode().value.trim(),
       files : this.refs.files.getDOMNode().value.trim(),
       repos : repos.join(','),
-      i: this.refs.icase.getDOMNode().checked ? 'fosho' : 'nope'
+      i: this.refs.icase.getDOMNode().checked ? 'fosho' : 'nope',
+      b: this.refs.burls.getDOMNode().checked ? 'fosho' : 'nope'
     };
   },
   setParams: function(params) {
     var q = this.refs.q.getDOMNode(),
         i = this.refs.icase.getDOMNode(),
-        files = this.refs.files.getDOMNode();
+        files = this.refs.files.getDOMNode(),
+        b = this.refs.burls.getDOMNode();
 
     q.value = params.q;
     i.checked = ParamValueToBool(params.i);
+    b.checked = ParamValueToBool(params.b);
     files.value = params.files;
   },
   hasAdvancedValues: function() {
-    return this.refs.files.getDOMNode().value.trim() !== '' || this.refs.icase.getDOMNode().checked || this.refs.repos.getDOMNode().value !== '';
+    return
+      this.refs.files.getDOMNode().value.trim() !== '' ||
+      this.refs.icase.getDOMNode().checked ||
+      this.refs.burls.getDOMNode().checked ||
+      this.refs.repos.getDOMNode().value !== '';
   },
   showAdvanced: function() {
     var adv = this.refs.adv.getDOMNode(),
@@ -553,6 +561,12 @@ var SearchBar = React.createClass({
                 </select>
               </div>
             </div>
+              <div className="field">
+                  <label htmlFor="blame-urls">Blame URLs</label>
+                  <div className="field-input">
+                      <input id="blame-urls" type="checkbox" ref="burls" />
+                  </div>
+              </div>
           </div>
           <div className="ban" ref="ban" onClick={this.showAdvanced}>
             <em>Advanced:</em> ignore case, filter by path, stuff like that.
@@ -686,7 +700,8 @@ var FilesView = React.createClass({
         repo = this.props.repo,
         regexp = this.props.regexp,
         matches = this.props.matches,
-        totalMatches = this.props.totalMatches;
+        totalMatches = this.props.totalMatches,
+        burls = this.props.burls;
     var files = matches.map(function(match, index) {
       var filename = match.Filename,
           blocks = CoalesceMatches(match.Matches);
@@ -695,7 +710,7 @@ var FilesView = React.createClass({
           var content = ContentFor(line, regexp);
           return (
             <div className="line">
-              <a href={Model.UrlToRepo(repo, filename, line.Number, rev)}
+              <a href={Model.UrlToRepo(repo, burls, filename, line.Number, rev)}
                   className="lnum"
                   target="_blank">{line.Number}</a>
               <span className="lval" dangerouslySetInnerHTML={{__html:content}} />
@@ -711,7 +726,7 @@ var FilesView = React.createClass({
       return (
         <div className="file">
           <div className="title">
-            <a href={Model.UrlToRepo(repo, match.Filename, null, rev)}>
+            <a href={Model.UrlToRepo(repo, burls, match.Filename, null, rev)}>
               {match.Filename}
             </a>
           </div>
@@ -742,7 +757,8 @@ var ResultView = React.createClass({
     Model.willSearch.tap(function(model, params) {
       _this.setState({
         results: null,
-        query: params.q
+        query: params.q,
+        burls: params.b
       });
     });
   },
@@ -772,7 +788,8 @@ var ResultView = React.createClass({
     }
 
     var regexp = this.state.regexp,
-        results = this.state.results || [];
+        results = this.state.results || [],
+        burls = this.state.burls;
     var repos = results.map(function(result, index) {
       return (
         <div className="repo">
@@ -784,7 +801,8 @@ var ResultView = React.createClass({
               rev={result.Rev}
               repo={result.Repo}
               regexp={regexp}
-              totalMatches={result.FilesWithMatch} />
+              totalMatches={result.FilesWithMatch}
+              burls={burls} />
         </div>
       );
     });
@@ -834,6 +852,7 @@ var App = React.createClass({
     this.setState({
       q: params.q,
       i: params.i,
+      b: params.b,
       files: params.files,
       repos: repos
     });
@@ -919,6 +938,7 @@ var App = React.createClass({
     var path = location.pathname +
       '?q=' + encodeURIComponent(params.q) +
       '&i=' + encodeURIComponent(params.i) +
+      '&b=' + encodeURIComponent(params.b) +
       '&files=' + encodeURIComponent(params.files) +
       '&repos=' + params.repos;
     history.pushState({path:path}, '', path);
@@ -930,9 +950,10 @@ var App = React.createClass({
             q={this.state.q}
             i={this.state.i}
             files={this.state.files}
+            b={this.state.b}
             repos={this.state.repos}
             onSearchRequested={this.onSearchRequested} />
-        <ResultView ref="resultView" q={this.state.q} />
+        <ResultView ref="resultView" q={this.state.q} burls={this.state.b} />
         <SelectionToolTip ref="SelectionToolTip" />
       </div>
     );

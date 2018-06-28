@@ -14,11 +14,13 @@ const (
 	defaultPollEnabled           = true
 	defaultVcs                   = "git"
 	defaultBaseUrl               = "{url}/blob/master/{path}{anchor}"
+	defaultBlameUrl              = "{url}/blame/master/{path}{anchor}"
 	defaultAnchor                = "#L{line}"
 )
 
 type UrlPattern struct {
 	BaseUrl string `json:"base-url"`
+	BlameUrl string `json:"blame-url"`
 	Anchor  string `json:"anchor"`
 }
 
@@ -99,11 +101,16 @@ func initRepo(r *Repo) {
 	if r.UrlPattern == nil {
 		r.UrlPattern = &UrlPattern{
 			BaseUrl: defaultBaseUrl,
+			BlameUrl: defaultBlameUrl,
 			Anchor:  defaultAnchor,
 		}
 	} else {
 		if r.UrlPattern.BaseUrl == "" {
 			r.UrlPattern.BaseUrl = defaultBaseUrl
+		}
+
+		if r.UrlPattern.BlameUrl == "" {
+		    r.UrlPattern.BlameUrl = defaultBlameUrl
 		}
 
 		if r.UrlPattern.Anchor == "" {
