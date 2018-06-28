@@ -352,3 +352,46 @@ button:focus {
   margin-bottom: 40px;
 }
 
+.selection-tooltip {
+  background-color: white;
+  border: 1px solid #CCC;
+  border-radius: 4px;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, .25);
+  display: none;
+  font-family: 'Source Code Pro', monospace;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 10px;
+  height: 20px;
+  line-height: 20px;
+  overflow: hidden;
+  padding: 0px 30px 0px 10px;
+  position: absolute;
+}
+
+.selection-tooltip,
+.selection-tooltip:link,
+.selection-tooltip:active,
+.selection-tooltip:hover{
+  color: #333;
+  text-decoration: none;
+}
+
+.selection-tooltip::after {
+  background-color: #09f;
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAiCAYAAAA6RwvCAAABVUlEQVRYw+2YQRGEMAxFkVAJlYAEJCABCUhAQiWshJWABCRUAg7+XsrMTkibNDBdDvtnek0fSfqToQPQPeE8AuK5IDkBGAC8AESctQEIAHxXKTUIgB7ACr0CAHcrCIAJNm0A+ltALkAc2jWlKoKkcnCKCdCR0i3p4lNmroJwPRGEgC6VhGo2gaTXUQUhwEQryKsmUOaZU40WEOoTk8Eb3iTGYgGhcgaQmcRYL4N0BjHl+RnIeDuI1iFJ8EBivC0gm7bRCsGj1ktKIIGx6pohNjNZ9RYQnxliTgHRM1a/XrH4kIEZhEzstT0mgeTmBpJZzemJjgk65naTO9aAPvOFtavAWMqKdjHyhcxIW9quGRVVO2uh/lTr8fWMqbEw1cvzV/AlXXico2c884IgwZhADMY2STBNQDQwzUAkmKYgAoxvClKAGZqDMDBb89IwRjlI0/f/W+ID3tQLQPib2qQAAAAASUVORK5CYII=);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 50%;
+  content: '';
+  display: block;
+  height: 20px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 20px;
+}
+
+.selection-tooltip.active {
+  display: block;
+}
+

@@ -292,6 +292,50 @@ var Model = {
 
   UrlToRepo: function(repo, path, line, rev) {
     return lib.UrlToRepo(this.repos[repo], path, line, rev);
+  },
+
+  GetSelection: function () {
+
+      if ( !('getSelection' in window) || !('getBoundingClientRect' in document.body) ) {
+        return null;
+      }
+
+      var selection = window.getSelection();
+      var anchorNode = selection.anchorNode;
+      var selectionText = selection.toString().trim();
+      var newLineReg = /[\r\n]+/;
+      var escapeReg = /[.?*+^$[\]\\(){}|-]/g;
+      var urlReg = /([\?&])q=([^&$]+)/;
+
+      if (selectionText.length && !newLineReg.test(selectionText) && $(anchorNode).closest('.lval').length) {
+
+          var url = window.location.href;
+          var escapedText = encodeURIComponent(selectionText.replace(escapeReg, '\\$&'));
+          var searchURL = url.replace(urlReg, '$1q=' + escapedText);
+
+          var selectionRange = selection.getRangeAt(0);
+          var selectionRect = selectionRange.getBoundingClientRect();
+          var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+
+          return {
+            text: selectionText,
+            url: searchURL,
+            left: selectionRect.left + selectionRect.width + 5,
+            top: selectionRect.top + scrollTop + 5
+          };
+
+      }
+
+      return null;
+
+  },
+
+  clearSelection: function () {
+      if ( !('getSelection' in window) ) {
+          return;
+      }
+      var selection = window.getSelection();
+      selection.removeAllRanges();
   }
 
 };
@@ -750,6 +794,38 @@ var ResultView = React.createClass({
   }
 });
 
+var SelectionToolTip = React.createClass({
+  getInitialState: function() {
+      return { active: false };
+  },
+  isActive: function () {
+    return this.state.active;
+  },
+  onClickTooltip: function (e) {
+    e.stopPropagation();
+    var _this = this;
+    setTimeout(function () {
+      Model.clearSelection();
+      _this.setState({
+          active: false
+      });
+    }, 100);
+  },
+  render: function () {
+    return (
+        <a
+            className={ this.state.active ? 'selection-tooltip active' : 'selection-tooltip' }
+            href={this.state.url}
+            style={{ top: this.state.top, left: this.state.left }}
+            onClick={this.onClickTooltip}
+            target='_blank'
+        >
+            {this.state.text}
+        </a>
+    );
+  }
+});
+
 var App = React.createClass({
   componentWillMount: function() {
     var params = ParamsFromUrl(),
@@ -803,6 +879,37 @@ var App = React.createClass({
       _this.refs.searchBar.setParams(params);
       Model.Search(params);
     });
+
+    document.addEventListener('click', function () {
+
+      clearTimeout(_this.toolTipDelay);
+
+      _this.toolTipDelay = setTimeout(function () {
+
+        var selection = Model.GetSelection();
+
+        if (selection) {
+
+            _this.refs.SelectionToolTip.setState({
+                active  : true,
+                text    : selection.text,
+                url     : selection.url,
+                top     : selection.top,
+                left    : selection.left
+            });
+
+        } else if ( _this.refs.SelectionToolTip.isActive() ) {
+
+            _this.refs.SelectionToolTip.setState({
+                active  : false
+            });
+
+        }
+
+      }, 50);
+
+    });
+
   },
   onSearchRequested: function(params) {
     this.updateHistory(params);
@@ -826,6 +933,7 @@ var App = React.createClass({
             repos={this.state.repos}
             onSearchRequested={this.onSearchRequested} />
         <ResultView ref="resultView" q={this.state.q} />
+        <SelectionToolTip ref="SelectionToolTip" />
       </div>
     );
   }
