@@ -12,8 +12,10 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/etsy/hound/config"
 	"github.com/etsy/hound/codesearch/index"
 	"github.com/etsy/hound/codesearch/regexp"
+	"github.com/etsy/hound/vcs/gitmethods"
 )
 
 const (
@@ -53,6 +55,7 @@ type Match struct {
 	LineNumber int
 	Before     []string
 	After      []string
+	GitBlame   [3]string
 }
 
 type SearchResponse struct {
@@ -139,7 +142,7 @@ func GetRegexpPattern(pat string, ignoreCase bool) string {
 	return "(?m)" + pat
 }
 
-func (n *Index) Search(pat string, opt *SearchOptions) (*SearchResponse, error) {
+func (n *Index) Search(pat string, opt *SearchOptions, repoObj *config.Repo, vcsdir string) (*SearchResponse, error) {
 	startedAt := time.Now()
 
 	n.lck.RLock()
@@ -186,13 +189,13 @@ func (n *Index) Search(pat string, opt *SearchOptions) (*SearchResponse, error) 
 				if filesFound < opt.Offset || (opt.Limit > 0 && filesCollected >= opt.Limit) {
 					return false, nil
 				}
-
 				matchesCollected++
 				matches = append(matches, &Match{
 					Line:       string(line),
 					LineNumber: lineno,
 					Before:     toStrings(before),
 					After:      toStrings(after),
+					GitBlame:	gitmethods.GitBlameLines(lineno, name, repoObj, vcsdir),
 				})
 
 				if matchesCollected > matchLimit {

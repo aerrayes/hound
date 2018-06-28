@@ -59,7 +59,8 @@ func searchAll(
 	repos []string,
 	idx map[string]*searcher.Searcher,
 	filesOpened *int,
-	duration *int) (map[string]*index.SearchResponse, error) {
+	duration *int,
+	reposObjs map[string]*config.Repo) (map[string]*index.SearchResponse, error) {
 
 	startedAt := time.Now()
 
@@ -69,7 +70,7 @@ func searchAll(
 	ch := make(chan *searchResponse, n)
 	for _, repo := range repos {
 		go func(repo string) {
-			fms, err := idx[repo].Search(query, opts)
+			fms, err := idx[repo].Search(query, opts, reposObjs[repo])
 			ch <- &searchResponse{repo, fms, err}
 		}(repo)
 	}
@@ -159,14 +160,18 @@ func parseRangeValue(rv string) (int, int) {
 	return b, e
 }
 
+func getAllRepos(idx map[string]*searcher.Searcher) map[string]*config.Repo {
+	var res map[string]*config.Repo = make(map[string]*config.Repo)
+	for name, srch := range idx {
+		res[name] = srch.Repo
+	}
+	return res
+}
+
 func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 
 	m.HandleFunc("/api/v1/repos", func(w http.ResponseWriter, r *http.Request) {
-		res := map[string]*config.Repo{}
-		for name, srch := range idx {
-			res[name] = srch.Repo
-		}
-
+		res := getAllRepos(idx)
 		writeResp(w, res)
 	})
 
@@ -175,6 +180,7 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 
 		stats := parseAsBool(r.FormValue("stats"))
 		repos := parseAsRepoList(r.FormValue("repos"), idx)
+		reposObjs := getAllRepos(idx)
 		query := r.FormValue("q")
 		opt.Offset, opt.Limit = parseRangeValue(r.FormValue("rng"))
 		opt.FileRegexp = r.FormValue("files")
@@ -188,7 +194,7 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 		var filesOpened int
 		var durationMs int
 
-		results, err := searchAll(query, &opt, repos, idx, &filesOpened, &durationMs)
+		results, err := searchAll(query, &opt, repos, idx, &filesOpened, &durationMs, reposObjs)
 		if err != nil {
 			// TODO(knorton): Return ok status because the UI expects it for now.
 			writeError(w, err, http.StatusOK)

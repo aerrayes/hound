@@ -121,10 +121,10 @@ func (s *Searcher) swapIndexes(idx *index.Index) error {
 // and the options.
 //
 // TODO(knorton): pat should really just be a part of SearchOptions
-func (s *Searcher) Search(pat string, opt *index.SearchOptions) (*index.SearchResponse, error) {
+func (s *Searcher) Search(pat string, opt *index.SearchOptions, repoObj *config.Repo) (*index.SearchResponse, error) {
 	s.lck.RLock()
 	defer s.lck.RUnlock()
-	return s.idx.Search(pat, opt)
+	return s.idx.Search(pat, opt, repoObj, vcsDirFor(repoObj))
 }
 
 // Get the excluded files as a JSON string. This is only used for returning
