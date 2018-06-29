@@ -345,7 +345,6 @@ var Model = {
 
   searchBlames: function (repo, file, $match) {
     var _this = this;
-    var reg = /\{(\d+) \[(\w+) (\d{4}\-\d{2}\-\d{2}) (\d{2}:\d{2}:\d{2}) ([\-+]\d+) ([^\]]+)\]\}/g;
     var $lines = $match.find('.line');
     var ls = $lines.first().find('.lnum').text().trim();
     var le = $lines.last().find('.lnum').text().trim();
@@ -387,6 +386,46 @@ var Model = {
             _this.didError.raise(this, "The server broke down");
         }
     });
+
+  },
+
+  searchHistory: function (repo, file, $header) {
+      var _this = this;
+
+      var params = {
+          repo: repo,
+          filename: file
+      };
+
+      $.ajax({
+          url: 'api/v1/history',
+          data: params,
+          type: 'GET',
+          dataType: 'json',
+          success: function(data) {
+              if (data.Error) {
+                  _this.didError.raise(_this, data.Error);
+                  return;
+              }
+
+              var $table = $('<table class="last-commits"><thead><th>Sha</th><th>Commit message</th><th>User</th><th>Time</th></thead></table>');
+
+              data.Matches.forEach(function (m) {
+                var $tr = $('<tr></tr>');
+                var $sha = $('<td width="10%"><a href="' + Model.UrlToCommit(repo, m.GitHistory[0]) + '" target="_blank">' + m.GitHistory[0] + '<a/></td>');
+                var $message = $('<td class="table-ellipsis" width="60%"><div><span>' + m.GitHistory[3] + '</span></div></td>');
+                var $user = $('<td>' + m.GitHistory[2] + '</td>');
+                var $time = $('<td class="table-ellipsis"><div><span>' + m.GitHistory[1] + '</span></div></td>');
+                $tr.append([$sha, $message, $user, $time]);
+                $table.append($tr);
+              });
+
+              $header.append($table);
+          },
+          error: function(xhr, status, err) {
+              _this.didError.raise(this, "The server broke down");
+          }
+      });
 
   }
 
@@ -759,9 +798,7 @@ var FilesView = React.createClass({
       var $matches = $file.find('.file-body .match');
       var $blames = $matches.find('.line .blame');
 
-      if ($blames.length) {
-        return;
-      }
+      if ($blames.length) { return; }
 
       $button.prop('disabled', true);
 
@@ -777,6 +814,25 @@ var FilesView = React.createClass({
         var $match = $(this);
         Model.searchBlames(repo, file, $match);
       });
+
+  },
+
+  getHistory : function (e) {
+
+      var $button = $(e.target);
+      var $file = $button.closest('.file');
+      var $header = $file.children('.title');
+
+      var $history = $header.find('.last-commits');
+
+      if ($history.length) { return; }
+
+      $button.prop('disabled', true);
+
+      var repo = this.props.repo;
+      var file = $button.data('file');
+
+      Model.searchHistory(repo, file, $header);
 
   },
 
@@ -830,7 +886,8 @@ var FilesView = React.createClass({
               {match.Filename}
             </a>
             &nbsp;{copy}
-            <button className="get-blames" onClick={_this.getBlames} data-file={match.Filename}>Blame this file</button>
+            <button className="commits-button get-blames" onClick={_this.getBlames} data-file={match.Filename}>Blame this file</button>
+            <button className="commits-button get-history" onClick={_this.getHistory} data-file={match.Filename}>History of this file</button>
           </div>
           <div className="file-body">
             {matches}

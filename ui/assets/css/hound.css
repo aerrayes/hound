@@ -477,14 +477,18 @@ button:focus {
   background-color: #eee;
 }
 
-.get-blames {
+.commits-button {
   float: right;
   padding: 7px 10px;
 }
 
-.get-blames[disabled] {
+.commits-button[disabled] {
   cursor: default;
   opacity: .25;
+}
+
+.get-history {
+  margin-right: 10px;
 }
 
 .last-commits {
@@ -493,11 +497,26 @@ button:focus {
   font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
   font-size: 14px;
   margin-top: 15px;
+  table-layout: fixed;
   width: 100%;
 }
 
 .last-commits th {
   text-align: left;
+}
+
+.last-commits .table-ellipsis {
+  width: 70%;
+}
+
+.last-commits .table-ellipsis div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.last-commits .table-ellipsis span {
+  white-space: nowrap;
 }
 
 .last-commits th,
