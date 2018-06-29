@@ -370,6 +370,9 @@ var SearchBar = React.createClass({
     }
 
     q.focus();
+
+    $(this.refs.repos.getDOMNode()).select2();
+
   },
   getInitialState: function() {
     return {
@@ -425,7 +428,8 @@ var SearchBar = React.createClass({
   getParams: function() {
     // selecting all repos is the same as not selecting any, so normalize the url
     // to have none.
-    var repos = Model.ValidRepos(this.refs.repos.state.value);
+    var reposArray = $(this.refs.repos.getDOMNode()).val();
+    var repos = Model.ValidRepos(reposArray || []);
     if (repos.length == Model.RepoCount()) {
       repos = [];
     }
@@ -454,7 +458,7 @@ var SearchBar = React.createClass({
       this.refs.files.getDOMNode().value.trim() !== '' ||
       this.refs.icase.getDOMNode().checked ||
       this.refs.burls.getDOMNode().checked ||
-      this.refs.repos.getDOMNode().value !== '';
+      $(this.refs.repos.getDOMNode()).val();
   },
   showAdvanced: function() {
     var adv = this.refs.adv.getDOMNode(),
@@ -471,6 +475,8 @@ var SearchBar = React.createClass({
     if (q.value.trim() !== '') {
       files.focus();
     }
+
+    $(this.refs.repos.getDOMNode()).trigger('change');
   },
   hideAdvanced: function() {
     var adv = this.refs.adv.getDOMNode(),
