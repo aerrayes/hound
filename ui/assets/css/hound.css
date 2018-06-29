@@ -395,3 +395,57 @@ button:focus {
   display: block;
 }
 
+/* overriding select2.css */
+.select2-container--default .select2-selection--multiple {
+  border-radius: 0;
+  border: 1px solid #ccc;
+  min-height: 26px;
+  line-height: 1.5;
+}
+
+.select2-results__option {
+  padding: 4px;
+}
+
+.select2-dropdown {
+  border: 1px solid #ccc;
+  font-size:11px;
+}
+
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+  border: 1px solid #09f;
+  line-height: 1.5;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: #09f;
+  border: none;
+  color: #fff;
+  font-size: 11px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+  color: #fff;
+}
+
+.select2-container--default .select2-results__option[aria-selected=true] {
+  background-color: #ccc;
+  color: #666;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: #09f;
+}
+
+.copyFilepath {
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border: 1px dotted transparent;
+}
+.copyFilepath:hover {
+  color: #09f;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #eee;
+}

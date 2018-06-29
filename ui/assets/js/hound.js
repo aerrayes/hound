@@ -729,12 +729,27 @@ var FilesView = React.createClass({
         );
       });
 
+      var copyToClipboard = function(filename) {
+        var el = document.createElement('textarea');
+        el.value = filename;
+        el.setAttribute('readonly', '');
+        el.style = {opacity: 0, display: 'none'};
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      };
+
+      var copy = '';
+      copy = (<a className="octicon octicon-clippy copyFilepath" onClick={copyToClipboard.bind(this, match.Filename)} title='Copy to clipboard'></a>)
+
       return (
         <div className="file">
           <div className="title">
             <a href={Model.UrlToRepo(repo, burls, match.Filename, null, rev)}>
               {match.Filename}
             </a>
+            &nbsp;{copy}
           </div>
           <div className="file-body">
             {matches}
