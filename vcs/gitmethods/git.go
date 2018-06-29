@@ -53,3 +53,29 @@ func GitBlameLines(start int, filename string, repoObj *config.Repo, vcsdir stri
 	results[2] = strings.Trim(name[0]," ");
 	return results
 }
+
+
+func GitLogForFile(filename string, vcsdir string) [][4]string{
+
+	cmd := exec.Command(
+	"git" , "log", "-n5" ,"--format=%h%n%ad%n%an%n%f","--",filename)
+	cmd.Dir = "data/"+vcsdir
+	r, _ := cmd.StdoutPipe()
+	defer r.Close()
+	_ = cmd.Start()
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	resultgit,_ := strings.TrimSpace(buf.String()), cmd.Wait()
+
+	var results [][4]string;
+	var commit [4]string;
+	for i,value := range strings.Split(resultgit, "\n") {
+		commit[i%4] = value;
+		if (i+1)%4 == 0 {
+			results = append(results,commit);
+			continue;
+		}
+	}
+
+	return results;
+}

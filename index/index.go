@@ -69,6 +69,7 @@ type SearchResponse struct {
 type FileMatch struct {
 	Filename string
 	Matches  []*Match
+	GitLog	 [][4]string
 }
 
 type ExcludedFile struct {
@@ -217,6 +218,7 @@ func (n *Index) Search(pat string, opt *SearchOptions, repoObj *config.Repo, vcs
 			results = append(results, &FileMatch{
 				Filename: name,
 				Matches:  matches,
+				GitLog: gitmethods.GitLogForFile(name,vcsdir),
 			})
 		}
 	}
