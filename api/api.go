@@ -269,7 +269,7 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 			}
 			w.Header().Set("Content-Type", "application/json;charset=utf-8")
 			w.Header().Set("Access-Control-Allow", "*")
-			fmt.Fprint(w, res)
+			writeResp(w, &res)
 		} else {
 			// TODO(knorton): Return ok status because the UI expects it for now.
 			writeError(w, fmt.Errorf("Missing Paramteres"), http.StatusOK)
@@ -291,7 +291,7 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 			}
 			w.Header().Set("Content-Type", "application/json;charset=utf-8")
 			w.Header().Set("Access-Control-Allow", "*")
-			fmt.Fprint(w, res)
+			writeResp(w, &res)
 		} else {
 			// TODO(knorton): Return ok status because the UI expects it for now.
 			writeError(w, fmt.Errorf("Missing Paramteres"), http.StatusOK)
