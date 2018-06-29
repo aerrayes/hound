@@ -295,6 +295,10 @@ var Model = {
     return lib.UrlToRepo(this.repos[repo], burls, path, line, rev);
   },
 
+  UrlToCommit: function (repo, commit) {
+    return lib.UrlToCommit(this.repos[repo], commit);
+  },
+
   GetSelection: function () {
 
       if ( !('getSelection' in window) || !('getBoundingClientRect' in document.body) ) {
@@ -337,6 +341,56 @@ var Model = {
       }
       var selection = window.getSelection();
       selection.removeAllRanges();
+  },
+
+  searchBlames: function (repo, file, $match) {
+    var _this = this;
+    var reg = /\{(\d+) \[(\w+) (\d{4}\-\d{2}\-\d{2}) (\d{2}:\d{2}:\d{2}) ([\-+]\d+) ([^\]]+)\]\}/g;
+    var $lines = $match.find('.line');
+    var ls = $lines.first().find('.lnum').text().trim();
+    var le = $lines.last().find('.lnum').text().trim();
+
+    var params = {
+        repo: repo,
+        ls: ls,
+        le: le,
+        filename: file
+    };
+
+    $.ajax({
+        url: 'api/v1/blames',
+        data: params,
+        type: 'GET',
+        dataType: 'text',
+        success: function(data) {
+            if (data.Error) {
+                _this.didError.raise(_this, data.Error);
+                return;
+            }
+
+           var array;
+
+            while((array = reg.exec(data)) !== null) {
+
+              var $ln = $match.find('.line .lnum:contains(' + array[1] + ')');
+
+              if ($ln.length) {
+
+                $ln
+                    .next()
+                      .html('<a href="' + Model.UrlToCommit(repo, array[2]) + '" target="_blank" title="' + array[6] + ' ' + array[3] + '">' + array[2] + '</a>')
+                    .removeClass('loading');
+
+              }
+
+            }
+        },
+        error: function(xhr, status, err) {
+          console.log(status, err);
+            //_this.didError.raise(this, "The server broke down");
+        }
+    });
+
   }
 
 };
@@ -701,7 +755,36 @@ var FilesView = React.createClass({
     Model.LoadMore(this.props.repo);
   },
 
+  getBlames: function (e) {
+
+      var $button = $(e.target);
+      var $file = $button.closest('.file');
+      var $matches = $file.find('.file-body .match');
+      var $blames = $matches.find('.line .blame');
+
+      if ($blames.length) {
+        return;
+      }
+
+      $button.prop('disabled', true);
+
+      var repo = this.props.repo;
+      var file = $button.data('file');
+
+      // Add blame columns
+      var $lnums = $matches.find('.lnum');
+      var $blame = $('<div class="blame loading">&nbsp;</div>');
+      $blame.insertAfter($lnums);
+
+      $matches.each(function () {
+        var $match = $(this);
+        Model.searchBlames(repo, file, $match);
+      });
+
+  },
+
   render: function() {
+    var _this = this;
     var rev = this.props.rev,
         repo = this.props.repo,
         regexp = this.props.regexp,
@@ -750,6 +833,7 @@ var FilesView = React.createClass({
               {match.Filename}
             </a>
             &nbsp;{copy}
+            <button className="get-blames" onClick={_this.getBlames} data-file={match.Filename}>Blame this file</button>
           </div>
           <div className="file-body">
             {matches}

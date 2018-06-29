@@ -43,5 +43,15 @@ var lib = {
           rev: rev,
           anchor: anchor
         });
+    },
+
+    UrlToCommit: function (repo, commit) {
+        var url = repo.url.replace(/\.git$/, ''),
+            pattern = repo['url-pattern'];
+
+        return lib.ExpandVars(pattern['commit-url'], {
+            url: url,
+            commit: commit
+        });
     }
 };

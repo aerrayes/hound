@@ -15,12 +15,14 @@ const (
 	defaultVcs                   = "git"
 	defaultBaseUrl               = "{url}/blob/master/{path}{anchor}"
 	defaultBlameUrl              = "{url}/blame/master/{path}{anchor}"
+	defaultCommitUrl             = "{url}/commit/{commit}"
 	defaultAnchor                = "#L{line}"
 )
 
 type UrlPattern struct {
 	BaseUrl string `json:"base-url"`
 	BlameUrl string `json:"blame-url"`
+	CommitUrl string `json:"commit-url"`
 	Anchor  string `json:"anchor"`
 }
 
@@ -102,6 +104,7 @@ func initRepo(r *Repo) {
 		r.UrlPattern = &UrlPattern{
 			BaseUrl: defaultBaseUrl,
 			BlameUrl: defaultBlameUrl,
+			CommitUrl: defaultCommitUrl,
 			Anchor:  defaultAnchor,
 		}
 	} else {
@@ -112,6 +115,10 @@ func initRepo(r *Repo) {
 		if r.UrlPattern.BlameUrl == "" {
 		    r.UrlPattern.BlameUrl = defaultBlameUrl
 		}
+
+		if r.UrlPattern.CommitUrl == "" {
+            r.UrlPattern.CommitUrl = defaultCommitUrl
+        }
 
 		if r.UrlPattern.Anchor == "" {
 			r.UrlPattern.Anchor = defaultAnchor

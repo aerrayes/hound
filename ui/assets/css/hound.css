@@ -276,6 +276,7 @@ button:focus {
 }
 
 .match > .line {
+  position: relative;
   white-space: pre;
 }
 
@@ -309,7 +310,7 @@ button:focus {
   font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
   padding: 3px 0 3px 5px;
   font-size: 14px;
-  white-space: pre;
+  white-space: nowrap;
 }
 
 .match > .line > .lval > em {
@@ -317,6 +318,32 @@ button:focus {
   font-weight: bold;
   color: #333;
   background-color: rgba(255,255,140,0.5);
+}
+
+.match > .line > .blame.loading {
+  background-image: url('../images/busy.gif');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 15%;
+}
+
+.match > .line > .blame {
+  background-color: beige;
+  border-right: 1px solid #eee;
+  display: inline-block;
+  font-family: 'Source Code Pro', monospace;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 14px;
+  padding: 3px 10px;
+  width: 67px;
+}
+
+.match > .line:last-child > .blame {
+  padding-bottom: 8px;
+}
+
+.match > .line:first-child > .blame {
+  padding-top: 8px;
 }
 
 .table-container table {
@@ -448,4 +475,32 @@ button:focus {
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: #eee;
+}
+
+.get-blames {
+  float: right;
+  padding: 7px 10px;
+}
+
+.get-blames[disabled] {
+  cursor: default;
+  opacity: .25;
+}
+
+.last-commits {
+  border-top: 1px solid #CCC;
+  font-family: 'Source Code Pro', monospace;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 14px;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.last-commits th {
+  text-align: left;
+}
+
+.last-commits th,
+.last-commits td{
+  padding: 2px 5px 2px 0;
 }
