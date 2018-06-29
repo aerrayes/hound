@@ -361,33 +361,30 @@ var Model = {
         url: 'api/v1/blames',
         data: params,
         type: 'GET',
-        dataType: 'text',
+        dataType: 'json',
         success: function(data) {
             if (data.Error) {
                 _this.didError.raise(_this, data.Error);
                 return;
             }
 
-           var array;
+            data.Matches.forEach(function (m) {
 
-            while((array = reg.exec(data)) !== null) {
+                var $ln = $match.find('.line .lnum:contains(' + m.Line + ')');
 
-              var $ln = $match.find('.line .lnum:contains(' + array[1] + ')');
+                if ($ln.length) {
 
-              if ($ln.length) {
+                    $ln
+                        .next()
+                        .html('<a href="' + Model.UrlToCommit(repo, m.GitBlame[0]) + '" target="_blank" title="' + m.GitBlame[2] + ' ' + m.GitBlame[1] + '">' + m.GitBlame[0] + '</a>')
+                        .removeClass('loading');
 
-                $ln
-                    .next()
-                      .html('<a href="' + Model.UrlToCommit(repo, array[2]) + '" target="_blank" title="' + array[6] + ' ' + array[3] + '">' + array[2] + '</a>')
-                    .removeClass('loading');
+                }
 
-              }
-
-            }
+            });
         },
         error: function(xhr, status, err) {
-          console.log(status, err);
-            //_this.didError.raise(this, "The server broke down");
+            _this.didError.raise(this, "The server broke down");
         }
     });
 
