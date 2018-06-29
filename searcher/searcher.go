@@ -515,7 +515,5 @@ func newSearcherConcurrent(
 
 
 func (s *Searcher) GitBlameSearch(lineStart,lineEnd uint, filename string, repoObj *config.Repo) (index.GitBlameResults, error) {
-	s.lck.RLock()
-	defer s.lck.RUnlock()
 	return s.idx.GitBlameSearch(lineStart, lineEnd, filename, vcsDirFor(repoObj))
 }

@@ -260,12 +260,21 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 		reposObjs := getAllRepos(idx)
 		lineStart := parseAsUintValue(r.FormValue("ls"),0,0,1);
 		lineEnd := parseAsUintValue(r.FormValue("le"),0,0,1);
-		res,_ := idx[repo].GitBlameSearch(lineStart, lineEnd, filename, reposObjs[repo]);
-
-
-		w.Header().Set("Content-Type", "application/json;charset=utf-8")
-		w.Header().Set("Access-Control-Allow", "*")
-		fmt.Fprint(w, res)
+		if(repo != "" && r.FormValue("ls") != "" && r.FormValue("le") != "" && r.FormValue("filename") != ""){
+			res,err := idx[repo].GitBlameSearch(lineStart, lineEnd, filename, reposObjs[repo]);
+			if err != nil {
+				// TODO(knorton): Return ok status because the UI expects it for now.
+				writeError(w, err, http.StatusOK)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json;charset=utf-8")
+			w.Header().Set("Access-Control-Allow", "*")
+			fmt.Fprint(w, res)
+		} else {
+			// TODO(knorton): Return ok status because the UI expects it for now.
+			writeError(w, fmt.Errorf("Missing Paramteres"), http.StatusOK)
+			return
+		}
 	})
 
 }
