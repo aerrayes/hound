@@ -6,13 +6,23 @@ import (
 	"bytes"
 	"strings"
 	"regexp"
-
-	"github.com/etsy/hound/config"
 )
 var filenameBlame map[string][]string = make(map[string][]string);
 
+type GitBlame struct {
+	Line uint
+	GitBlame [3]string
+}
 
-func GitBlameAllLines(filename string, repoObj *config.Repo, vcsdir string) [] string {
+func CreateGitBlame(line [3]string, lineno uint) GitBlame{
+	var obj GitBlame
+	obj.Line = lineno
+	obj.GitBlame = line;
+	return obj;
+}
+
+
+func GitBlameAllLines(filename string, vcsdir string) [] string {
 	// caching on the same request , maybe ?
 	if blame, ok := filenameBlame[filename]; ok {
 		return blame
@@ -33,10 +43,10 @@ func GitBlameAllLines(filename string, repoObj *config.Repo, vcsdir string) [] s
 
 }
 
-func GitBlameLines(start int, filename string, repoObj *config.Repo, vcsdir string ) [3]string{
-	lines :=GitBlameAllLines(filename, repoObj, vcsdir);
+func GitBlameLines(start uint, filename string, vcsdir string ) [3]string{
+	lines :=GitBlameAllLines(filename, vcsdir);
 
-	if (start) > len(lines) {
+	if (start) > uint(len(lines)) {
 		var res[3]string;
 		return res
 	}

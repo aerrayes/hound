@@ -121,10 +121,10 @@ func (s *Searcher) swapIndexes(idx *index.Index) error {
 // and the options.
 //
 // TODO(knorton): pat should really just be a part of SearchOptions
-func (s *Searcher) Search(pat string, opt *index.SearchOptions, repoObj *config.Repo) (*index.SearchResponse, error) {
+func (s *Searcher) Search(pat string, opt *index.SearchOptions) (*index.SearchResponse, error) {
 	s.lck.RLock()
 	defer s.lck.RUnlock()
-	return s.idx.Search(pat, opt, repoObj, vcsDirFor(repoObj))
+	return s.idx.Search(pat, opt)
 }
 
 // Get the excluded files as a JSON string. This is only used for returning
@@ -511,4 +511,11 @@ func newSearcherConcurrent(
 		name:     name,
 		searcher: s,
 	}
+}
+
+
+func (s *Searcher) GitBlameSearch(lineStart,lineEnd uint, filename string, repoObj *config.Repo) (index.GitBlameResults, error) {
+	s.lck.RLock()
+	defer s.lck.RUnlock()
+	return s.idx.GitBlameSearch(lineStart, lineEnd, filename, vcsDirFor(repoObj))
 }

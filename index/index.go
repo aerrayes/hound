@@ -12,7 +12,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/etsy/hound/config"
 	"github.com/etsy/hound/codesearch/index"
 	"github.com/etsy/hound/codesearch/regexp"
 	"github.com/etsy/hound/vcs/gitmethods"
@@ -55,7 +54,6 @@ type Match struct {
 	LineNumber int
 	Before     []string
 	After      []string
-	GitBlame   [3]string
 }
 
 type SearchResponse struct {
@@ -69,7 +67,6 @@ type SearchResponse struct {
 type FileMatch struct {
 	Filename string
 	Matches  []*Match
-	GitLog	 [][4]string
 }
 
 type ExcludedFile struct {
@@ -82,6 +79,10 @@ type IndexRef struct {
 	Rev  string
 	Time time.Time
 	dir  string
+}
+
+type GitBlameResults struct {
+	Matches []gitmethods.GitBlame
 }
 
 func (r *IndexRef) Dir() string {
@@ -143,7 +144,7 @@ func GetRegexpPattern(pat string, ignoreCase bool) string {
 	return "(?m)" + pat
 }
 
-func (n *Index) Search(pat string, opt *SearchOptions, repoObj *config.Repo, vcsdir string) (*SearchResponse, error) {
+func (n *Index) Search(pat string, opt *SearchOptions) (*SearchResponse, error) {
 	startedAt := time.Now()
 
 	n.lck.RLock()
@@ -190,13 +191,13 @@ func (n *Index) Search(pat string, opt *SearchOptions, repoObj *config.Repo, vcs
 				if filesFound < opt.Offset || (opt.Limit > 0 && filesCollected >= opt.Limit) {
 					return false, nil
 				}
+
 				matchesCollected++
 				matches = append(matches, &Match{
 					Line:       string(line),
 					LineNumber: lineno,
 					Before:     toStrings(before),
 					After:      toStrings(after),
-					GitBlame:	gitmethods.GitBlameLines(lineno, name, repoObj, vcsdir),
 				})
 
 				if matchesCollected > matchLimit {
@@ -218,7 +219,6 @@ func (n *Index) Search(pat string, opt *SearchOptions, repoObj *config.Repo, vcs
 			results = append(results, &FileMatch{
 				Filename: name,
 				Matches:  matches,
-				GitLog: gitmethods.GitLogForFile(name,vcsdir),
 			})
 		}
 	}
@@ -230,6 +230,17 @@ func (n *Index) Search(pat string, opt *SearchOptions, repoObj *config.Repo, vcs
 		Duration:       time.Now().Sub(startedAt),
 		Revision:       n.Ref.Rev,
 	}, nil
+}
+
+func (n *Index) GitBlameSearch(lineStart, lineEnd uint, filename, vcsdir string) (GitBlameResults, error) {
+
+	var results GitBlameResults;
+	for i :=lineStart ; i <= lineEnd ; i++ {
+		obj := gitmethods.GitBlameLines(i, filename, vcsdir)
+		gitobj :=gitmethods.CreateGitBlame(obj,i);
+		results.Matches = append(results.Matches, gitobj);
+	}
+	return results ,nil
 }
 
 func isTextFile(filename string) (bool, error) {

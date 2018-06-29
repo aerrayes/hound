@@ -59,8 +59,7 @@ func searchAll(
 	repos []string,
 	idx map[string]*searcher.Searcher,
 	filesOpened *int,
-	duration *int,
-	reposObjs map[string]*config.Repo) (map[string]*index.SearchResponse, error) {
+	duration *int) (map[string]*index.SearchResponse, error) {
 
 	startedAt := time.Now()
 
@@ -70,7 +69,7 @@ func searchAll(
 	ch := make(chan *searchResponse, n)
 	for _, repo := range repos {
 		go func(repo string) {
-			fms, err := idx[repo].Search(query, opts, reposObjs[repo])
+			fms, err := idx[repo].Search(query, opts)
 			ch <- &searchResponse{repo, fms, err}
 		}(repo)
 	}
@@ -180,7 +179,6 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 
 		stats := parseAsBool(r.FormValue("stats"))
 		repos := parseAsRepoList(r.FormValue("repos"), idx)
-		reposObjs := getAllRepos(idx)
 		query := r.FormValue("q")
 		opt.Offset, opt.Limit = parseRangeValue(r.FormValue("rng"))
 		opt.FileRegexp = r.FormValue("files")
@@ -194,7 +192,7 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 		var filesOpened int
 		var durationMs int
 
-		results, err := searchAll(query, &opt, repos, idx, &filesOpened, &durationMs, reposObjs)
+		results, err := searchAll(query, &opt, repos, idx, &filesOpened, &durationMs)
 		if err != nil {
 			// TODO(knorton): Return ok status because the UI expects it for now.
 			writeError(w, err, http.StatusOK)
@@ -255,4 +253,19 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 
 		writeResp(w, "ok")
 	})
+
+	m.HandleFunc("/api/v1/blames", func(w http.ResponseWriter, r *http.Request) {
+		filename := r.FormValue("filename")
+		repo := r.FormValue("repo")
+		reposObjs := getAllRepos(idx)
+		lineStart := parseAsUintValue(r.FormValue("ls"),0,0,1);
+		lineEnd := parseAsUintValue(r.FormValue("le"),0,0,1);
+		res,_ := idx[repo].GitBlameSearch(lineStart, lineEnd, filename, reposObjs[repo]);
+
+
+		w.Header().Set("Content-Type", "application/json;charset=utf-8")
+		w.Header().Set("Access-Control-Allow", "*")
+		fmt.Fprint(w, res)
+	})
+
 }
