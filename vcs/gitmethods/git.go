@@ -14,6 +14,11 @@ type GitBlame struct {
 	GitBlame [3]string
 }
 
+type GitHistory struct {
+	GitHistory [4]string
+}
+
+
 func CreateGitBlame(line [3]string, lineno uint) GitBlame{
 	var obj GitBlame
 	obj.Line = lineno
@@ -21,6 +26,15 @@ func CreateGitBlame(line [3]string, lineno uint) GitBlame{
 	return obj;
 }
 
+func CreateGitHistory(lines [][4]string) []GitHistory{
+	var res []GitHistory
+	for _,value := range(lines){
+		var obj GitHistory
+		obj.GitHistory = value;
+		res = append(res, obj);
+	}
+	return res;
+}
 
 func GitBlameAllLines(filename string, vcsdir string) [] string {
 	// caching on the same request , maybe ?

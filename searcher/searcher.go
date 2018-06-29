@@ -517,3 +517,7 @@ func newSearcherConcurrent(
 func (s *Searcher) GitBlameSearch(lineStart,lineEnd uint, filename string, repoObj *config.Repo) (index.GitBlameResults, error) {
 	return s.idx.GitBlameSearch(lineStart, lineEnd, filename, vcsDirFor(repoObj))
 }
+
+func (s *Searcher) GitHistorySearch(filename string, repoObj *config.Repo) (index.GitHistoryResults, error) {
+	return s.idx.GitHistorySearch(filename, vcsDirFor(repoObj))
+}

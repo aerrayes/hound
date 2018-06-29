@@ -277,4 +277,26 @@ func Setup(m *http.ServeMux, idx map[string]*searcher.Searcher) {
 		}
 	})
 
+	m.HandleFunc("/api/v1/history", func(w http.ResponseWriter, r *http.Request) {
+		filename := r.FormValue("filename")
+		repo := r.FormValue("repo")
+		reposObjs := getAllRepos(idx)
+
+		if(repo != "" && r.FormValue("filename") != ""){
+			res,err := idx[repo].GitHistorySearch(filename, reposObjs[repo]);
+			if err != nil {
+				// TODO(knorton): Return ok status because the UI expects it for now.
+				writeError(w, err, http.StatusOK)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json;charset=utf-8")
+			w.Header().Set("Access-Control-Allow", "*")
+			fmt.Fprint(w, res)
+		} else {
+			// TODO(knorton): Return ok status because the UI expects it for now.
+			writeError(w, fmt.Errorf("Missing Paramteres"), http.StatusOK)
+			return
+		}
+	})
+
 }

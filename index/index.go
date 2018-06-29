@@ -85,6 +85,11 @@ type GitBlameResults struct {
 	Matches []gitmethods.GitBlame
 }
 
+type GitHistoryResults struct {
+	Matches []gitmethods.GitHistory
+}
+
+
 func (r *IndexRef) Dir() string {
 	return r.dir
 }
@@ -242,6 +247,17 @@ func (n *Index) GitBlameSearch(lineStart, lineEnd uint, filename, vcsdir string)
 	}
 	return results ,nil
 }
+
+func (n *Index) GitHistorySearch(filename, vcsdir string) (GitHistoryResults, error) {
+
+	var results GitHistoryResults;
+	obj := gitmethods.GitLogForFile(filename, vcsdir)
+	gitobj :=gitmethods.CreateGitHistory(obj);
+
+	results.Matches = gitobj
+	return results ,nil
+}
+
 
 func isTextFile(filename string) (bool, error) {
 	buf := make([]byte, filePeekSize)
