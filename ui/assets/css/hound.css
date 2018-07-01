@@ -254,6 +254,10 @@ button:focus {
   background-color: #f5f5f5;
 }
 
+.file textarea {
+  display: none;
+}
+
 .title a {
   color: #666;
 }
@@ -318,13 +322,6 @@ button:focus {
   font-weight: bold;
   color: #333;
   background-color: rgba(255,255,140,0.5);
-}
-
-.match > .line > .blame.loading {
-  background-image: url('../images/busy.gif');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 15%;
 }
 
 .match > .line > .blame {
@@ -506,13 +503,9 @@ button:focus {
 }
 
 .last-commits .table-ellipsis {
-  width: 70%;
-}
-
-.last-commits .table-ellipsis div {
   overflow: hidden;
+  padding-right: 15px;
   text-overflow: ellipsis;
-  width: 100%;
 }
 
 .last-commits .table-ellipsis span {

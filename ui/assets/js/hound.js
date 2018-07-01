@@ -343,11 +343,14 @@ var Model = {
       selection.removeAllRanges();
   },
 
-  searchBlames: function (repo, file, $match) {
+  getFormattedDateTime: function (time) {
+    var date = new Date(time);
+    return date.toString().replace(/^(\w+ \w+ \d{2} \d{4} [\d:]+).*$/, '$1');
+  },
+
+  searchBlames: function (repo, file, ls, le, dispatch) {
+
     var _this = this;
-    var $lines = $match.find('.line');
-    var ls = $lines.first().find('.lnum').text().trim();
-    var le = $lines.last().find('.lnum').text().trim();
 
     var params = {
         repo: repo,
@@ -362,25 +365,14 @@ var Model = {
         type: 'GET',
         dataType: 'json',
         success: function(data) {
+
             if (data.Error) {
                 _this.didError.raise(_this, data.Error);
                 return;
             }
 
-            data.Matches.forEach(function (m) {
+            dispatch.call(null, data);
 
-                var $ln = $match.find('.line .lnum:contains(' + m.Line + ')');
-
-                if ($ln.length) {
-
-                    $ln
-                        .next()
-                        .html('<a href="' + Model.UrlToCommit(repo, m.GitBlame[0]) + '" target="_blank" title="' + m.GitBlame[2] + ' ' + m.GitBlame[1] + '">' + m.GitBlame[0] + '</a>')
-                        .removeClass('loading');
-
-                }
-
-            });
         },
         error: function(xhr, status, err) {
             _this.didError.raise(this, "The server broke down");
@@ -389,7 +381,7 @@ var Model = {
 
   },
 
-  searchHistory: function (repo, file, $header) {
+  searchHistory: function (repo, file, dispatch) {
       var _this = this;
 
       var params = {
@@ -408,19 +400,8 @@ var Model = {
                   return;
               }
 
-              var $table = $('<table class="last-commits"><thead><th>Sha</th><th>Commit message</th><th>User</th><th>Time</th></thead></table>');
+              dispatch.call(null, data);
 
-              data.Matches.forEach(function (m) {
-                var $tr = $('<tr></tr>');
-                var $sha = $('<td width="10%"><a href="' + Model.UrlToCommit(repo, m.GitHistory[0]) + '" target="_blank">' + m.GitHistory[0] + '<a/></td>');
-                var $message = $('<td class="table-ellipsis" width="60%"><div><span>' + m.GitHistory[3] + '</span></div></td>');
-                var $user = $('<td>' + m.GitHistory[2] + '</td>');
-                var $time = $('<td class="table-ellipsis"><div><span>' + m.GitHistory[1] + '</span></div></td>');
-                $tr.append([$sha, $message, $user, $time]);
-                $table.append($tr);
-              });
-
-              $header.append($table);
           },
           error: function(xhr, status, err) {
               _this.didError.raise(this, "The server broke down");
@@ -786,127 +767,308 @@ var ContentFor = function(line, regexp) {
   return buffer.join('');
 };
 
+var Line = React.createClass({
+
+    getInitialState: function() {
+        return {
+          blame: null
+        };
+    },
+
+    render: function () {
+
+      var filename = this.props.filename,
+          repo = this.props.repo,
+          rev = this.props.rev,
+          burls = this.props.burls,
+          regexp = this.props.regexp
+          line = this.props.line;
+
+      var content = ContentFor(line, regexp);
+      var blameBlock = this.state.blame
+          ? (
+              <div className="blame">
+                  <a
+                      href={Model.UrlToCommit(repo, this.state.blame[0])}
+                      title={this.state.blame[2] + " " + Model.getFormattedDateTime(this.state.blame[1])}
+                      target="_blank"
+                  >
+                    {this.state.blame[0]}
+                  </a>
+              </div>
+          )
+          : "";
+
+      return (
+          <div className="line">
+              <a href={Model.UrlToRepo(repo, burls, filename, line.Number, rev)}
+                 className="lnum"
+                 target="_blank"
+              >
+                  {line.Number}
+              </a>
+              {blameBlock}
+              <span className="lval" dangerouslySetInnerHTML={{__html:content}} />
+          </div>
+      );
+
+    }
+});
+
+var Block = React.createClass({
+
+    loadBlameBlocks: function () {
+
+        var Lines = this.refs.Lines;
+        var children = Lines.props.children;
+        var ls = children[0].props.line.Number;
+        var le = children[children.length - 1].props.line.Number;
+
+        Model.searchBlames(this.props.repo, this.props.filename, ls, le, function (data) {
+
+          var parseData = data.Matches.reduce(function (obj, line) {
+
+            obj[line.Line] = line.GitBlame;
+
+            return obj;
+
+          }, {});
+
+          var childProp;
+
+          for (childProp in Lines._renderedChildren) {
+
+              if (Lines._renderedChildren.hasOwnProperty(childProp)) {
+
+                var line = Lines._renderedChildren[childProp];
+                var ln = line.props.line.Number;
+
+                if (parseData.hasOwnProperty(ln)) {
+
+                  line.setState({
+                      blame: parseData[ln]
+                  });
+
+                }
+
+              }
+
+          }
+
+        });
+
+    },
+
+    render: function () {
+
+      var filename = this.props.filename,
+          repo = this.props.repo,
+          rev = this.props.rev,
+          block = this.props.block,
+          burls = this.props.burls,
+          regexp = this.props.regexp;
+
+      var lines = block.map(function (line) {
+
+        return (
+            <Line
+                filename={filename}
+                repo={repo}
+                rev={rev}
+                regexp={regexp}
+                burls={burls}
+                line={line}
+            />
+        );
+      });
+
+      return (
+          <div className="match" ref="Lines">
+              {lines}
+          </div>
+      );
+    }
+
+});
+
+var File = React.createClass({
+
+    getInitialState: function() {
+        return {
+            history: null
+        };
+    },
+
+    copyToClipboard: function(e) {
+
+        var textarea = this.refs.CopyFilename.getDOMNode();
+
+        textarea.style.display = 'block';
+        textarea.select();
+        document.execCommand('copy');
+        textarea.style.display = '';
+
+    },
+
+    getBlames: function () {
+
+      this.refs.GetBlamesButton.getDOMNode().setAttribute('disabled', 'disabled');
+
+      var FileBody = this.refs.FileBody;
+      var childProp;
+
+      for (childProp in FileBody._renderedChildren) {
+
+        if (FileBody._renderedChildren.hasOwnProperty(childProp)) {
+
+            FileBody._renderedChildren[childProp].loadBlameBlocks();
+
+        }
+
+      }
+
+    },
+
+    getHistory : function () {
+
+      var _this = this;
+
+      this.refs.GetHistoryButton.getDOMNode().setAttribute('disabled', 'disabled');
+
+      Model.searchHistory(this.props.repo, this.props.file.Filename, function (data) {
+
+        _this.setState({
+            history: data.Matches
+        });
+
+      });
+
+    },
+
+    render: function () {
+
+      var file = this.props.file,
+          rev = this.props.rev,
+          repo = this.props.repo,
+          regexp = this.props.regexp,
+          burls = this.props.burls;
+
+      var lineBlocks = CoalesceMatches(file.Matches);
+
+      var blocks = lineBlocks.map(function (block) {
+
+        return (
+            <Block
+                filename={file.Filename}
+                repo={repo}
+                rev={rev}
+                block={block}
+                burls={burls}
+                regexp={regexp}
+            />
+        );
+
+      });
+
+      var tds = this.state.history
+        ? this.state.history.map(function (commit) {
+              return (
+                  <tr>
+                      <td><a href={Model.UrlToCommit(repo, commit.GitHistory[0])} target="_blank">{commit.GitHistory[0]}</a></td>
+                      <td className="table-ellipsis" title={commit.GitHistory[3]}>
+                          <span>
+                              {commit.GitHistory[3]}
+                          </span>
+                      </td>
+                      <td className="table-ellipsis">
+                          <span>
+                              {commit.GitHistory[2]}
+                          </span>
+                      </td>
+                      <td>{Model.getFormattedDateTime(commit.GitHistory[1])}</td>
+                  </tr>
+              );
+          })
+        : "";
+
+      var history = this.state.history
+        ? (
+            <table className="last-commits">
+                <thead>
+                    <th width="10%">Sha</th>
+                    <th width="40%">Commit message</th>
+                    <th width="25%">User</th>
+                    <th width="25%">Time</th>
+                </thead>
+                <tbody>
+                    {tds}
+                </tbody>
+            </table>
+          )
+        : "";
+
+      return (
+          <div className="file">
+              <div className="title">
+                  <a href={Model.UrlToRepo(repo, burls, file.Filename, null, rev)}>
+                      {file.Filename}
+                  </a>
+                  <a className="octicon octicon-clippy copyFilepath" onClick={this.copyToClipboard.bind(this)} title='Copy to clipboard'></a>
+                  <button className="commits-button get-blames" onClick={this.getBlames.bind(this)} ref="GetBlamesButton">Blame this file</button>
+                  <button className="commits-button get-history" onClick={this.getHistory.bind(this)} ref="GetHistoryButton">Last commits</button>
+                  {history}
+              </div>
+              <div className="file-body" ref="FileBody">
+                  {blocks}
+              </div>
+              <textarea ref="CopyFilename">{file.Filename}</textarea>
+          </div>
+      );
+    }
+});
+
 var FilesView = React.createClass({
   onLoadMore: function(event) {
     Model.LoadMore(this.props.repo);
   },
 
-  getBlames: function (e) {
-
-      var $button = $(e.target);
-      var $file = $button.closest('.file');
-      var $matches = $file.find('.file-body .match');
-      var $blames = $matches.find('.line .blame');
-
-      if ($blames.length) { return; }
-
-      $button.prop('disabled', true);
-
-      var repo = this.props.repo;
-      var file = $button.data('file');
-
-      // Add blame columns
-      var $lnums = $matches.find('.lnum');
-      var $blame = $('<div class="blame loading">&nbsp;</div>');
-      $blame.insertAfter($lnums);
-
-      $matches.each(function () {
-        var $match = $(this);
-        Model.searchBlames(repo, file, $match);
-      });
-
-  },
-
-  getHistory : function (e) {
-
-      var $button = $(e.target);
-      var $file = $button.closest('.file');
-      var $header = $file.children('.title');
-
-      var $history = $header.find('.last-commits');
-
-      if ($history.length) { return; }
-
-      $button.prop('disabled', true);
-
-      var repo = this.props.repo;
-      var file = $button.data('file');
-
-      Model.searchHistory(repo, file, $header);
-
-  },
-
   render: function() {
-    var _this = this;
+
     var rev = this.props.rev,
         repo = this.props.repo,
         regexp = this.props.regexp,
         matches = this.props.matches,
-        totalMatches = this.props.totalMatches,
-        burls = this.props.burls;
-    var files = matches.map(function(match, index) {
-      var filename = match.Filename,
-          blocks = CoalesceMatches(match.Matches);
-      var matches = blocks.map(function(block) {
-        var lines = block.map(function(line) {
-          var content = ContentFor(line, regexp);
-          return (
-            <div className="line">
-              <a href={Model.UrlToRepo(repo, burls, filename, line.Number, rev)}
-                  className="lnum"
-                  target="_blank">{line.Number}</a>
-              <span className="lval" dangerouslySetInnerHTML={{__html:content}} />
-            </div>
-          );
-        });
+        burls = this.props.burls,
+        totalMatches = this.props.totalMatches;
+
+    var files = matches.map(function(file) {
 
         return (
-          <div className="match">{lines}</div>
+            <File
+                repo={repo}
+                regexp={regexp}
+                burls={burls}
+                file={file}
+                rev={rev}
+            />
         );
-      });
 
-      var copyToClipboard = function(filename) {
-        var el = document.createElement('textarea');
-        el.value = filename;
-        el.setAttribute('readonly', '');
-        el.style = {opacity: 0, display: 'none'};
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-      };
-
-      var copy = '';
-      copy = (<a className="octicon octicon-clippy copyFilepath" onClick={copyToClipboard.bind(this, match.Filename)} title='Copy to clipboard'></a>)
-
-      return (
-        <div className="file">
-          <div className="title">
-            <a href={Model.UrlToRepo(repo, burls, match.Filename, null, rev)}>
-              {match.Filename}
-            </a>
-            &nbsp;{copy}
-            <button className="commits-button get-blames" onClick={_this.getBlames} data-file={match.Filename}>Blame this file</button>
-            <button className="commits-button get-history" onClick={_this.getHistory} data-file={match.Filename}>History of this file</button>
-          </div>
-          <div className="file-body">
-            {matches}
-          </div>
-        </div>
-      );
     });
 
     var more = '';
-    if (matches.length < totalMatches) {
-      more = (<button className="moar" onClick={this.onLoadMore}>Load all {totalMatches} matches in {Model.NameForRepo(repo)}</button>);
+
+    if (files.length < totalMatches) {
+        more = <button className="moar" onClick={this.onLoadMore}>Load all {totalMatches} matches in {Model.NameForRepo(repo)}</button>;
     }
 
     return (
-      <div className="files">
-      {files}
-      {more}
-      </div>
+        <div className="files">
+            {files}
+            {more}
+        </div>
     );
+
+
   }
 });
 
@@ -949,6 +1111,7 @@ var ResultView = React.createClass({
     var regexp = this.state.regexp,
         results = this.state.results || [],
         burls = this.state.burls;
+
     var repos = results.map(function(result, index) {
       return (
         <div className="repo">
@@ -956,7 +1119,8 @@ var ResultView = React.createClass({
             <span className="mega-octicon octicon-repo"></span>
             <span className="name">{Model.NameForRepo(result.Repo)}</span>
           </div>
-          <FilesView matches={result.Matches}
+          <FilesView
+              matches={result.Matches}
               rev={result.Rev}
               repo={result.Repo}
               regexp={regexp}
