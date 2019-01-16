@@ -13,8 +13,8 @@ const (
 	defaultPushEnabled           = false
 	defaultPollEnabled           = true
 	defaultVcs                   = "git"
-	defaultBaseUrl               = "{url}/blob/master/{path}{anchor}"
-	defaultBlameUrl              = "{url}/blame/master/{path}{anchor}"
+	defaultBaseUrl               = "{url}/blob/HEAD/{path}{anchor}"
+	defaultBlameUrl              = "{url}/blame/HEAD/{path}{anchor}"
 	defaultCommitUrl             = "{url}/commit/{commit}"
 	defaultAnchor                = "#L{line}"
 )
